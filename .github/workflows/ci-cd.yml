@@ -1,0 +1,46 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Install Solhint
+        run: npm install -g solhint
+        
+      - name: Lint Solidity
+        run: solhint 'AidChain.sol' -f table
+        
+      - name: Setup Hardhat environment
+        run: |
+          npm install --save-dev hardhat @nomiclabs/hardhat-waffle @nomiclabs/hardhat-ethers ethereum-waffle ethers chai
+          mkdir -p contracts
+          cp AidChain.sol contracts/
+          
+      - name: Run Backend Tests
+        run: npm run test:backend
+        
+      - name: Show contract compilation info
+        run: |
+          echo "=== Contract Information ==="
+          echo "Showing available contracts:"
+          npx hardhat compile --show-stack-traces
+          echo "=== End Contract Information ==="
+          
+      - name: Notify test completion
+        run: echo "All tests passed! Vercel will handle the deployment automatically." 
